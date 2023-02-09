@@ -40,6 +40,12 @@ internal class EventProcessingFrame: Frame
     {
         Add(inner.As<Frame>());
     }
+    public EventProcessingFrame(Type aggregateType, Variable aggregate, IEventHandlingFrame inner)
+        : this(inner.As<Frame>().IsAsync, aggregateType, inner.EventType)
+    {
+        Add(inner.As<Frame>());
+        Aggregate = aggregate;
+    }
 
     public Type AggregateType { get; }
 
@@ -59,14 +65,18 @@ internal class EventProcessingFrame: Frame
 
     public override IEnumerable<Variable> FindVariables(IMethodVariables chain)
     {
+        if (Aggregate != null)
+            yield return Aggregate;
+
         if (AggregateType != null)
         {
             // You don't need it if you're in a Create method
-            Aggregate = chain.TryFindVariable(AggregateType, VariableSource.All);
-            if (Aggregate != null)
+            var aggregate = chain.TryFindVariable(AggregateType, VariableSource.All);
+            if (aggregate != null)
             {
-                yield return Aggregate;
+                yield return aggregate;
             }
+            Aggregate ??= aggregate;
         }
 
         foreach (var inner in _inner.OfType<IEventHandlingFrame>()) inner.Configure(this);

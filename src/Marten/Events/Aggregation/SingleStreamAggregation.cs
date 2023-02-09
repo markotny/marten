@@ -16,6 +16,10 @@ public class SingleStreamAggregation<T>: GeneratedAggregateProjectionBase<T>
     {
     }
 
+    public SingleStreamAggregation(SubClasses subClasses) : base(AggregationScope.SingleStream, subClasses)
+    {
+    }
+
     protected sealed override object buildEventSlicer(StoreOptions documentMapping)
     {
         Type slicerType = null;

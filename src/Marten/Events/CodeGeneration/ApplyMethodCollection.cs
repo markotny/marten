@@ -41,15 +41,19 @@ internal class ApplyMethodCollection: MethodCollection
         return new ApplyMethodCall(slot);
     }
 
-    public void BuildApplyMethod(GeneratedType generatedType, IDocumentMapping aggregateMapping)
+    public void BuildApplyMethod(GeneratedType generatedType, IDocumentMapping aggregateMapping, Type rootAggregateType = null)
     {
+        rootAggregateType ??= AggregateType;
         var returnType = IsAsync
-            ? typeof(ValueTask<>).MakeGenericType(AggregateType)
-            : AggregateType;
+            ? typeof(ValueTask<>).MakeGenericType(rootAggregateType)
+            : rootAggregateType;
+
+
+        var aggregateArgument = new Argument(AggregateType, "currentAggregateState");
 
         var args = new[]
         {
-            new Argument(typeof(IEvent), "@event"), new Argument(AggregateType, "aggregate"),
+            new Argument(typeof(IEvent), "@event"), aggregateArgument,
             new Argument(typeof(IQuerySession), "session")
         };
 
@@ -61,10 +65,13 @@ internal class ApplyMethodCollection: MethodCollection
         var method = new GeneratedMethod(MethodName, returnType, args);
         generatedType.AddMethod(method);
 
-        var eventHandling = AddEventHandling(AggregateType, aggregateMapping, this);
+        var localAggregateVariableFrame = new DeclareLocalAggregateFrame(rootAggregateType, "aggregate", aggregateArgument);
+        method.Frames.Add(localAggregateVariableFrame);
+
+        var eventHandling = AddEventHandling(rootAggregateType, localAggregateVariableFrame.LocalVariable, aggregateMapping, this);
         method.Frames.Add(eventHandling);
 
 
-        method.Frames.Code("return {0};", new Use(AggregateType));
+        method.Frames.Code("return {0};", localAggregateVariableFrame.LocalVariable);
     }
 }

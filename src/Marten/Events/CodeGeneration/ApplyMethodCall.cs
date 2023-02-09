@@ -30,7 +30,7 @@ internal class ApplyMethodCall: MethodCall, IEventHandlingFrame
         // Replace any arguments to the specific T event type
         TrySetArgument(parent.DataOnly);
 
-        if (ReturnType == parent.AggregateType)
+        if (ReturnType.IsAssignableTo(parent.AggregateType))
         {
             AssignResultTo(parent.Aggregate);
         }

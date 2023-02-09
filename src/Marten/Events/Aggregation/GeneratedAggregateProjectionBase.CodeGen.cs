@@ -254,7 +254,13 @@ public abstract partial class GeneratedAggregateProjectionBase<T>
         _liveGeneratedType.AllInjectedFields.Add(new InjectedField(GetType()));
 
         _createMethods.BuildCreateMethod(_liveGeneratedType, _aggregateMapping);
-        _applyMethods.BuildApplyMethod(_liveGeneratedType, _aggregateMapping);
+
+        _applyMethods?.BuildApplyMethod(_liveGeneratedType, _aggregateMapping);
+
+        _subTypeAplyMethods?.Each(x =>
+        {
+            x.Value.BuildApplyMethod(_liveGeneratedType, _aggregateMapping, typeof(T));
+        });
 
         _liveGeneratedType.Setters.AddRange(_applyMethods.Setters());
         _liveGeneratedType.Setters.AddRange(_createMethods.Setters());

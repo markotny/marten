@@ -19,6 +19,7 @@ public abstract partial class GeneratedAggregateProjectionBase<T>: GeneratedProj
 {
     private readonly Lazy<Type[]> _allEventTypes;
     internal readonly ApplyMethodCollection _applyMethods;
+    internal readonly Dictionary<Type, ApplyMethodCollection> _subTypeAplyMethods;
 
     internal readonly CreateMethodCollection _createMethods;
     private readonly string _inlineAggregationHandlerType;
@@ -37,6 +38,28 @@ public abstract partial class GeneratedAggregateProjectionBase<T>: GeneratedProj
     {
         _createMethods = new CreateMethodCollection(GetType(), typeof(T));
         _applyMethods = new ApplyMethodCollection(GetType(), typeof(T));
+        _shouldDeleteMethods = new ShouldDeleteMethodCollection(GetType(), typeof(T));
+
+        Options.DeleteViewTypeOnTeardown<T>();
+
+        _allEventTypes = new Lazy<Type[]>(() =>
+        {
+            return _createMethods.Methods.Concat(_applyMethods.Methods).Concat(_shouldDeleteMethods.Methods)
+                .Select(x => x.EventType).Concat(DeleteEvents).Concat(TransformedEvents).Distinct().ToArray();
+        });
+
+
+        _inlineAggregationHandlerType = GetType().ToSuffixedTypeName("InlineHandler");
+        _liveAggregationTypeName = GetType().ToSuffixedTypeName("LiveAggregation");
+        _versioning = new AggregateVersioning<T>(scope);
+
+        RegisterPublishedType(typeof(T));
+    }
+    protected GeneratedAggregateProjectionBase(AggregationScope scope, SubClasses subClasses) : this(scope)
+    {
+        _subTypeAplyMethods = subClasses.ToDictionary(t => t.DocumentType, t => new ApplyMethodCollection(GetType(), t.DocumentType));
+
+        _createMethods = new CreateMethodCollection(GetType(), typeof(T));
         _shouldDeleteMethods = new ShouldDeleteMethodCollection(GetType(), typeof(T));
 
         Options.DeleteViewTypeOnTeardown<T>();

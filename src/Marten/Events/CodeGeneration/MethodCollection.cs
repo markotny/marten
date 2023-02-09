@@ -240,6 +240,38 @@ internal abstract class MethodCollection
         return new EventTypePatternMatchFrame(frames);
     }
 
+    public static EventTypePatternMatchFrame AddEventHandling(Type aggregateType, Variable aggregate, IDocumentMapping mapping,
+        params MethodCollection[] collections)
+    {
+        var byType = new Dictionary<Type, EventProcessingFrame>();
+
+        var frames = new List<EventProcessingFrame>();
+
+        foreach (var collection in collections)
+        {
+            foreach (var slot in collection.Methods)
+            {
+                var frame = collection.CreateEventTypeHandler(aggregateType, mapping, slot);
+                if (byType.TryGetValue(frame.EventType, out var container))
+                {
+                    container.Add((Frame)frame);
+                }
+                else
+                {
+                    container = new EventProcessingFrame(aggregateType, aggregate, frame);
+
+                    byType.Add(frame.EventType, container);
+
+                    frames.Add(container);
+                }
+            }
+        }
+
+        frames.Sort(new EventTypeComparer());
+
+        return new EventTypePatternMatchFrame(frames);
+    }
+
 
     public static MethodSlot[] FindInvalidMethods(Type projectionType, params MethodCollection[] collections)
     {

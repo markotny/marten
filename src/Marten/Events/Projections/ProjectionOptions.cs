@@ -143,8 +143,9 @@ public class ProjectionOptions: DaemonSettings
     {
         // Make sure there's a DocumentMapping for the aggregate
         var expression = _options.Schema.For<T>();
+        var mapping = _options.Storage.MappingFor(typeof(T));
 
-        var source = new SingleStreamAggregation<T> { Lifecycle = lifecycle ?? ProjectionLifecycle.Inline };
+        var source = new SingleStreamAggregation<T>(mapping.SubClasses) { Lifecycle = lifecycle ?? ProjectionLifecycle.Inline };
         source.AssembleAndAssertValidity();
         All.Add(source);
 
